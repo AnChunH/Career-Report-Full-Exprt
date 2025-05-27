@@ -60,6 +60,33 @@ function clearDraft() {
 }
 
 setInterval(saveDraft, 5000);
+
+const typeHints = {
+  "🌟 積極挑戰型": ["你是否參與過競賽或進階學習？", "你怎麼安排自己的課業與準備目標？"],
+  "🔍 穩定探索型": ["你曾在哪些科目努力後看到進步？", "有沒有活動讓你開始對某個領域產生興趣？"],
+  "🔄 重整起步型": ["你是否曾遇到學習瓶頸？你怎麼面對？", "你在哪些方面想要改變自己？"],
+  "🛠️ 實作經驗型": ["你參與過哪些活動？做了哪些實作？", "你有沒有把活動經驗連結到學科？"],
+  "📚 持續累積型": ["你如何持續安排自己的學習時間？", "你如何整理學習成果與筆記？"]
+};
+
+window.addEventListener("DOMContentLoaded", () => {
+  const quiz = document.getElementById("typeQuiz");
+  const result = document.getElementById("quiz-result");
+  const hintBlock = document.getElementById("typeHints");
+
+  if (quiz) {
+    quiz.addEventListener("change", e => {
+      const val = quiz.querySelector("input:checked")?.value;
+      if (!val) return;
+      result.innerText = `你選擇的是：${val}`;
+      const tips = typeHints[val] || [];
+      hintBlock.innerHTML = `<h3>✍ 建議你可以思考這些問題：</h3><ul>` +
+        tips.map(q => `<li>${q}</li>`).join("") + `</ul>`;
+    });
+  }
+});
+
+
 window.addEventListener("DOMContentLoaded", loadDraft);
 
 async function downloadWord() {
@@ -138,7 +165,21 @@ children.push(new Paragraph(""));
 
   <div class="section">
     <h2>📘 第二部分：學習歷程盤點（九大項）</h2>
-    <div id="dynamicFields"></div>
+    
+<h2>🔎 我是哪一型？互動小測驗</h2>
+<p>請選擇你認為最符合你目前學習狀況的描述：</p>
+<form id="typeQuiz">
+  <label><input type="radio" name="type" value="🌟 積極挑戰型"> 我會主動進階學習與參加競賽</label><br>
+  <label><input type="radio" name="type" value="🔍 穩定探索型"> 我在穩定努力中尋找方向</label><br>
+  <label><input type="radio" name="type" value="🔄 重整起步型"> 我正在試著調整與補強學習</label><br>
+  <label><input type="radio" name="type" value="🛠️ 實作經驗型"> 我有很多活動與實作經驗</label><br>
+  <label><input type="radio" name="type" value="📚 持續累積型"> 我認真學習並穩定累積成果</label><br>
+</form>
+<div id="quiz-result" style="margin-top:10px; font-weight:bold;"></div>
+
+<h2>📘 模擬寫作引導</h2>
+<div id="typeHints"></div>
+<div id="dynamicFields"></div>
   </div>
 
   <div class="section">
