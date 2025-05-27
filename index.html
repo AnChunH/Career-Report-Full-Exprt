@@ -21,8 +21,105 @@
     button:hover { background-color: #1e8449; }
     .group-description, .group-links { font-size: 14px; color: #444; margin-top: 5px; }
   </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.7.0/docx.umd.min.js">function saveDraft() {
+  const inputs = document.querySelectorAll("input[type=text], textarea, select");
+  const draft = {};
+  inputs.forEach((el, i) => {
+    if (el.multiple) {
+      draft["multi_"+i] = Array.from(el.selectedOptions).map(o => o.value);
+    } else {
+      draft[i] = el.value;
+    }
+  });
+  localStorage.setItem("career_draft", JSON.stringify(draft));
+}
+
+function loadDraft() {
+  const saved = localStorage.getItem("career_draft");
+  if (!saved) return;
+  const confirmRestore = confirm("是否載入上次未完成的填寫內容？");
+  if (!confirmRestore) return;
+  const data = JSON.parse(saved);
+  const inputs = document.querySelectorAll("input[type=text], textarea, select");
+  inputs.forEach((el, i) => {
+    if (el.multiple && data["multi_"+i]) {
+      Array.from(el.options).forEach(opt => {
+        opt.selected = data["multi_"+i].includes(opt.value);
+      });
+      showGroupTooltip(el);
+    } else if (data[i]) {
+      el.value = data[i];
+    }
+  });
+  updateSuggestion();
+}
+
+function clearDraft() {
+  localStorage.removeItem("career_draft");
+  alert("已清除草稿！請重新整理頁面。");
+}
+
+setInterval(saveDraft, 5000);
+window.addEventListener("DOMContentLoaded", loadDraft);
+
+async function downloadWord() {
+  const { Document, Packer, Paragraph, TextRun } = window.docx;
+  const inputs = document.querySelectorAll("input[type=text], textarea, select");
+  const doc = new Document();
+  const children = [];
+
+  const today = new Date().toLocaleDateString('zh-TW');
+children.push(new Paragraph({ children: [new TextRun({ text: "🎯 生涯規劃報告 I+II", bold: true, size: 28 })] }));
+children.push(new Paragraph({ children: [new TextRun({ text: `📅 輸出日期：${today}`, italics: true })] }));
+children.push(new Paragraph(""));
+children.push(new Paragraph("親愛的同學："));
+children.push(new Paragraph("高一下學期即將進入尾聲，這段時間你在各項課程、社團、活動中不斷嘗試、學習，也慢慢累積起屬於自己的經驗與故事。"));
+children.push(new Paragraph("現在，是個很好的時機，請你停下來回望過去，仔細盤點這一年來的學習歷程。透過具體的回顧與書寫，你將更清楚自己擅長什麼、喜歡什麼、想加強什麼，也能為高二做出更有方向的準備。"));
+children.push(new Paragraph("本報告不只是填空，而是一個你與自己對話的機會。請你認真、誠懇地完成每一個欄位，它將成為你學習歷程檔案中寶貴的一頁，也幫助你在未來申請大學、探索生涯時，更加有據可依、有話可說。"));
+children.push(new Paragraph("加油，我們期待在文字中看見更清晰的你。"));
+children.push(new Paragraph(""));
+
+  const studentClass = document.getElementById("studentClass").value.trim();
+  const studentName = document.getElementById("studentName").value.trim();
+  const reportDate = document.getElementById("reportDate").value.trim();
+  children.push(new Paragraph(`📘 班級：${studentClass}`));
+  children.push(new Paragraph(`📌 姓名：${studentName}`));
+  children.push(new Paragraph(`📅 日期：${reportDate}`));
+
+  inputs.forEach((el, i) => {
+    if (["studentClass", "studentName", "reportDate"].includes(el.id)) return;
+    const label = el.previousElementSibling?.innerText?.trim() || `欄位 ${i+1}`;
+    let value = "";
+    if (el.tagName === "SELECT" && el.multiple) {
+      value = Array.from(el.selectedOptions).map(o => o.value).join(", ");
+    } else {
+      value = el.value.trim();
+    }
+    children.push(new Paragraph({ spacing: { before: 200 }, children: [new TextRun({ text: `【${label}】`, bold: true })] }));
+    children.push(new Paragraph(value));
+  });
+
+  const docFile = new Document({ sections: [{ properties: {}, children }] });
+  const blob = await Packer.toBlob(docFile);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `生涯規劃報告_${studentName || "未命名"}.docx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+</script>
 </head>
 <body>
+  <div class="section">
+  <p style="font-size: 16px; color: #333; line-height: 1.6;">
+    親愛的同學：<br><br>
+    高一下學期即將進入尾聲，這段時間你在各項課程、社團、活動中不斷嘗試、學習，也慢慢累積起屬於自己的經驗與故事。<br><br>
+    現在，是個很好的時機，請你停下來回望過去，仔細盤點這一年來的學習歷程。透過具體的回顧與書寫，你將更清楚自己擅長什麼、喜歡什麼、想加強什麼，也能為高二做出更有方向的準備。<br><br>
+    本報告不只是填空，而是一個你與自己對話的機會。請你認真、誠懇地完成每一個欄位，它將成為你學習歷程檔案中寶貴的一頁，也幫助你在未來申請大學、探索生涯時，更加有據可依、有話可說。<br><br>
+    加油，我們期待在文字中看見更清晰的你。
+  </p>
+</div>
   <h1>🎯 生涯規劃報告 I+II（完整版）</h1>
 
   <div class="section">
@@ -71,6 +168,8 @@
   </div>
 
   <button onclick="downloadReport()">💾 下載填寫結果 (.txt)</button>
+  <button onclick="downloadWord()">📝 下載 Word 檔 (.docx)</button>
+  <button onclick="clearDraft()">🗑 清除草稿</button>
 
   <script>
     const fieldTitles = [
